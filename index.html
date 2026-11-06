@@ -19,20 +19,23 @@
         h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
         .row { display: flex; gap: 8px; }
         input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
-        button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
         button.sub { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 11px 16px; }
         #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; }
-        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; line-height: 1.8; display: none; }
-        #out h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 10px; }
-        #out h3 { font-size: 1.02rem; margin: 18px 0 6px; color: var(--accent); }
-        #out p { margin-bottom: 8px; } #out ul { padding-left: 20px; margin-bottom: 8px; }
-        #copy { display: none; width: 100%; margin-top: 12px; padding: 14px; }
+        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; line-height: 1.8; display: none; outline: none; }
+        #out:focus { border-color: var(--accent); }
+        #out h2 { font-size: 1.25rem; color: var(--accent); margin-bottom: 12px; }
+        #out h3 { font-size: 1.05rem; margin: 20px 0 6px; color: var(--accent); }
+        #out p { margin-bottom: 10px; } 
+        #out ul { padding-left: 20px; margin-bottom: 10px; }
+        #copy { display: none; width: 100%; margin-top: 14px; padding: 14px; }
         details { margin-top: 26px; color: var(--muted); }
         summary { cursor: pointer; padding: 6px 0; }
         .set { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
         textarea { font-size: 0.9rem; }
         .ver { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 28px; }
-        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; }
+        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 1000; }
         #toast.show { opacity: 1; }
     </style>
 </head>
@@ -51,12 +54,12 @@
         <summary>⚙️ 설정</summary>
         <div class="set">
             <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
-            <input id="model" type="text" placeholder="모델 이름" autocomplete="off">
+            <input id="model" type="text" value="gemini-3.8-flash" placeholder="모델 이름" autocomplete="off">
             <textarea id="prompt" rows="8" placeholder="설교문 프롬프트를 한 번만 붙여넣으세요"></textarea>
             <button class="sub" id="copyprompt">📋 프롬프트만 복사 (Gemini 앱에 직접 붙여넣을 때)</button>
         </div>
     </details>
-    <div class="ver">0.1</div>
+    <div class="ver">Gemini 3.8 Flash Engine</div>
 </div>
 <div id="toast"></div>
 
@@ -74,7 +77,6 @@
         }
         function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-        // 데이터 파일: 한 번 받으면 브라우저에 보관
         function getData(file) {
             const url = 'data/' + file;
             const net = () => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r; });
@@ -83,6 +85,7 @@
                 .then(c => c.match(url).then(hit => hit ? hit.json() : net().then(r => { c.put(url, r.clone()); return r.json(); })))
                 .catch(() => net().then(r => r.json()));
         }
+
         async function ensure(keys) {
             metaP = metaP || getData('meta.json');
             const meta = await metaP;
@@ -95,11 +98,17 @@
             }));
         }
 
-        // 설정 저장 (이 기기에만)
+        // 설정 저장
         const KEYS = { key: 'sermon.gkey', model: 'sermon.gmodel', prompt: 'sermon.prompt' };
         Object.keys(KEYS).forEach(n => {
-            try { $(n).value = localStorage.getItem(KEYS[n]) || (n === 'model' ? 'gemini-3.8-flash' : ''); } catch (e) {}
-            $(n).addEventListener('change', () => { try { localStorage.setItem(KEYS[n], $(n).value.trim()); } catch (e) {} });
+            try { 
+                const saved = localStorage.getItem(KEYS[n]);
+                // gemini-3.8-flash 를 기본값으로 유지
+                $(n).value = saved || (n === 'model' ? 'gemini-3.8-flash' : ''); 
+            } catch (e) {}
+            $(n).addEventListener('change', () => { 
+                try { localStorage.setItem(KEYS[n], $(n).value.trim()); } catch (e) {} 
+            });
         });
 
         function parseRef(s) {
@@ -151,24 +160,76 @@
                 const key = $('key').value.trim();
                 if (!key) { $('settings').open = true; throw new Error('설정에 Gemini API 키를 입력해 주세요'); }
                 const prompt = await buildPrompt();
-                st.textContent = '⏳ 설교문 작성 중… (1~2분 걸릴 수 있어요)';
-                out.style.display = 'none'; $('copy').style.display = 'none';
+                
+                st.textContent = '⚡ 설교문 작성 시작...';
+                out.innerHTML = '';
+                out.style.display = 'block';
+                $('copy').style.display = 'none';
+
                 const model = $('model').value.trim() || 'gemini-3.8-flash';
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+                
+                // 스트리밍(SSE) 호출: 실시간으로 글자가 화면에 찍힘
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${key}`;
+                
+                const res = await fetch(url, {
                     method: 'POST',
-                    headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-                    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 16000 } })
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ 
+                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                        generationConfig: { 
+                            maxOutputTokens: 8192,
+                            // Flash 모델의 내부 생각 시간을 0으로 꺼서 즉시 답변 시작
+                            thinkingConfig: { thinkingBudget: 0 }
+                        } 
+                    })
                 });
-                const j = await res.json();
-                if (!res.ok) throw new Error((j.error && j.error.message) || ('오류 ' + res.status));
-                const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-                const text = parts.map(x => x.text || '').join('');
-                if (!text) throw new Error('응답이 비어 있습니다 (한도 초과나 안전 필터일 수 있어요)');
-                out.innerHTML = mdToHtml(text);
-                out.style.display = 'block'; $('copy').style.display = 'block';
-                st.textContent = '';
-            } catch (e) { st.textContent = '⚠️ ' + e.message; }
-            busy = false; $('go').disabled = false;
+
+                if (!res.ok) {
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error((errJson.error && errJson.error.message) || ('오류 ' + res.status));
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+                let buffer = '';
+
+                st.textContent = '✍️ 실시간으로 작성 중입니다...';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // 완전하지 않은 마지막 줄 보존
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.slice(6).trim();
+                            if (!jsonStr) continue;
+                            try {
+                                const parsed = JSON.parse(jsonStr);
+                                const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                                if (chunk) {
+                                    fullText += chunk;
+                                    out.innerHTML = mdToHtml(fullText); // 생성되는 족족 화면에 업데이트
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                if (!fullText.trim()) throw new Error('응답이 비어 있습니다. 잠시 후 다시 시도해 주세요.');
+                
+                $('copy').style.display = 'block';
+                st.textContent = '✅ 작성이 완료되었습니다!';
+            } catch (e) { 
+                st.textContent = '⚠️ ' + e.message; 
+            } finally {
+                busy = false; 
+                $('go').disabled = false;
+            }
         }
 
         async function copyRich() {
