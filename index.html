@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>새벽설교</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="새벽설교">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <style>
+        :root { --bg:#f6f8fc; --card:#ffffff; --text:#111827; --muted:#6b7280; --border:#d9dfeb; --accent:#1d4ed8; }
+        @media (prefers-color-scheme: dark) { :root { --bg:#0b0f19; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --border:#243047; --accent:#3b82f6; } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+               padding: calc(env(safe-area-inset-top, 0px) + 28px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+        .wrap { max-width: 680px; margin: 0 auto; }
+        h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
+        .row { display: flex; gap: 8px; }
+        input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+        button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        button.sub { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 11px 16px; }
+        #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; }
+        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; line-height: 1.8; display: none; }
+        #out h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 10px; }
+        #out h3 { font-size: 1.02rem; margin: 18px 0 6px; color: var(--accent); }
+        #out p { margin-bottom: 8px; } #out ul { padding-left: 20px; margin-bottom: 8px; }
+        #copy { display: none; width: 100%; margin-top: 12px; padding: 14px; }
+        details { margin-top: 26px; color: var(--muted); }
+        summary { cursor: pointer; padding: 6px 0; }
+        .set { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        textarea { font-size: 0.9rem; }
+        .ver { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 28px; }
+        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; }
+        #toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>새벽설교</h1>
+    <div class="row">
+        <input id="ref" type="text" placeholder="창40" autocomplete="off" enterkeyhint="go" autofocus>
+        <button id="go">만들기</button>
+    </div>
+    <div id="status"></div>
+    <div id="out" contenteditable="true"></div>
+    <button id="copy">📄 복사 (구글 문서용)</button>
+
+    <details id="settings">
+        <summary>⚙️ 설정</summary>
+        <div class="set">
+            <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
+            <input id="model" type="text" placeholder="모델 이름" autocomplete="off">
+            <textarea id="prompt" rows="8" placeholder="설교문 프롬프트를 한 번만 붙여넣으세요"></textarea>
+            <button class="sub" id="copyprompt">📋 프롬프트만 복사 (Gemini 앱에 직접 붙여넣을 때)</button>
+        </div>
+    </details>
+    <div class="ver">0.1</div>
+</div>
+<div id="toast"></div>
+
+<script>
+        const BOOK_MAP = {"창": "창세기", "출": "출애굽기", "레": "레위기", "민": "민수기", "신": "신명기", "수": "여호수아", "삿": "사사기", "룻": "룻기", "삼상": "사무엘상", "삼하": "사무엘하", "왕상": "열왕기상", "왕하": "열왕기하", "대상": "역대상", "대하": "역대하", "스": "에스라", "느": "느헤미야", "에": "에스더", "욥": "욥기", "시": "시편", "잠": "잠언", "전": "전도서", "아": "아가", "사": "이사야", "렘": "예레미야", "애": "예레미야애가", "겔": "에스겔", "단": "다니엘", "호": "호세아", "욜": "요엘", "암": "아모스", "옵": "오바댜", "욘": "요나", "미": "미가", "나": "나훔", "합": "하박국", "습": "스바냐", "학": "학개", "슥": "스가랴", "말": "말라기", "마": "마태복음", "막": "마가복음", "눅": "누가복음", "요": "요한복음", "행": "사도행전", "롬": "로마서", "고전": "고린도전서", "고후": "고린도후서", "갈": "갈라디아서", "엡": "에베소서", "빌": "빌립보서", "골": "골로새서", "살전": "데살로니가전서", "살후": "데살로니가후서", "딤전": "디모데전서", "딤후": "디모데후서", "딛": "디도서", "몬": "빌레몬서", "히": "히브리서", "약": "야고보서", "벧전": "베드로전서", "벧후": "베드로후서", "요일": "요한일서", "요이": "요한이서", "요삼": "요한삼서", "유": "유다서", "계": "요한계시록"};
+        const REVERSE_BOOK_MAP = Object.fromEntries(Object.entries(BOOK_MAP).map(([k, v]) => [v, k]));
+        const $ = id => document.getElementById(id);
+        const VERS = { nkrv: { name: '개역개정', idx: 3 }, easy: { name: '쉬운성경', idx: 5 } };
+        let BIBLE = [], metaP = null;
+        const loaded = {};
+
+        function toast(msg) {
+            const t = $('toast'); t.textContent = msg; t.classList.add('show');
+            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800);
+        }
+        function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+        // 데이터 파일: 한 번 받으면 브라우저에 보관
+        function getData(file) {
+            const url = 'data/' + file;
+            const net = () => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r; });
+            if (!window.caches) return net().then(r => r.json());
+            return caches.open('bible-data-1')
+                .then(c => c.match(url).then(hit => hit ? hit.json() : net().then(r => { c.put(url, r.clone()); return r.json(); })))
+                .catch(() => net().then(r => r.json()));
+        }
+        async function ensure(keys) {
+            metaP = metaP || getData('meta.json');
+            const meta = await metaP;
+            if (!BIBLE.length) BIBLE = meta.map(m => [m[0], m[1], m[2], null, null, null]);
+            await Promise.all(keys.filter(k => !loaded[k]).map(async k => {
+                const arr = await getData(k + '.json');
+                const i = VERS[k].idx;
+                for (let n = 0; n < arr.length; n++) BIBLE[n][i] = arr[n];
+                loaded[k] = true;
+            }));
+        }
+
+        // 설정 저장 (이 기기에만)
+        const KEYS = { key: 'sermon.gkey', model: 'sermon.gmodel', prompt: 'sermon.prompt' };
+        Object.keys(KEYS).forEach(n => {
+            try { $(n).value = localStorage.getItem(KEYS[n]) || (n === 'model' ? 'gemini-3.8-flash' : ''); } catch (e) {}
+            $(n).addEventListener('change', () => { try { localStorage.setItem(KEYS[n], $(n).value.trim()); } catch (e) {} });
+        });
+
+        function parseRef(s) {
+            const m = s.trim().match(/^([가-힣]+)\s*(\d+)\s*[장편]?$/);
+            if (!m) return null;
+            const b = REVERSE_BOOK_MAP[m[1]] || m[1];
+            return BOOK_MAP[b] ? { book: b, name: BOOK_MAP[b], chapter: +m[2] } : null;
+        }
+
+        async function buildPrompt() {
+            const ref = parseRef($('ref').value);
+            if (!ref) throw new Error('예: 창40, 요3, 요한복음 3장');
+            const tpl = $('prompt').value.trim();
+            if (!tpl) { $('settings').open = true; throw new Error('설정에 프롬프트를 먼저 붙여넣어 주세요'); }
+            await ensure(['nkrv', 'easy']);
+            const rows = BIBLE.filter(r => r[0] === ref.book && r[1] === ref.chapter);
+            if (!rows.length) throw new Error(`${ref.name} ${ref.chapter}장은 없습니다`);
+            const body = Object.keys(VERS).map(k => `■ ${VERS[k].name}${k === 'nkrv' ? '' : ' (이해를 돕는 참고용)'}\n` +
+                rows.map(r => `${r[2]} ${r[VERS[k].idx]}`).join('\n')).join('\n\n');
+            const head = tpl.split('[성경책 이름]').join(ref.name).split('[숫자]').join(String(ref.chapter));
+            return `${head}\n\n---\n[${ref.name} ${ref.chapter}장 본문]\n${body}\n\n※ 요약과 모든 인용은 개역개정 본문 기준으로 작성하고, 쉬운성경은 내용 이해를 위한 참고로만 사용하세요.`;
+        }
+
+        function mdToHtml(src) {
+            const lines = src.replace(/^```[a-z]*\n?/i, '').replace(/\n?```\s*$/, '').split('\n');
+            const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            let h = '', ul = false, first = true;
+            lines.forEach(ln => {
+                const t = ln.trim();
+                const li = t.match(/^[*-]\s+(.*)/);
+                if (li) { if (!ul) { h += '<ul>'; ul = true; } h += '<li>' + inl(li[1]) + '</li>'; first = false; return; }
+                if (ul) { h += '</ul>'; ul = false; }
+                if (!t) return;
+                const hd = t.match(/^#{1,4}\s+(.*)/);
+                if (first && !hd) h += '<h2>' + inl(t) + '</h2>';
+                else if (hd || /^[<\[][^<>\[\]]{1,40}[>\]]:?$/.test(t)) h += '<h3>' + inl(hd ? hd[1] : t) + '</h3>';
+                else h += '<p>' + inl(t) + '</p>';
+                first = false;
+            });
+            return h + (ul ? '</ul>' : '');
+        }
+
+        let busy = false;
+        async function generate() {
+            if (busy) return;
+            busy = true; $('go').disabled = true;
+            const st = $('status'), out = $('out');
+            try {
+                const key = $('key').value.trim();
+                if (!key) { $('settings').open = true; throw new Error('설정에 Gemini API 키를 입력해 주세요'); }
+                const prompt = await buildPrompt();
+                st.textContent = '⏳ 설교문 작성 중… (1~2분 걸릴 수 있어요)';
+                out.style.display = 'none'; $('copy').style.display = 'none';
+                const model = $('model').value.trim() || 'gemini-3.8-flash';
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+                    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 16000 } })
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error((j.error && j.error.message) || ('오류 ' + res.status));
+                const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+                const text = parts.map(x => x.text || '').join('');
+                if (!text) throw new Error('응답이 비어 있습니다 (한도 초과나 안전 필터일 수 있어요)');
+                out.innerHTML = mdToHtml(text);
+                out.style.display = 'block'; $('copy').style.display = 'block';
+                st.textContent = '';
+            } catch (e) { st.textContent = '⚠️ ' + e.message; }
+            busy = false; $('go').disabled = false;
+        }
+
+        async function copyRich() {
+            const out = $('out');
+            try {
+                await navigator.clipboard.write([new ClipboardItem({
+                    'text/html': new Blob([out.innerHTML], { type: 'text/html' }),
+                    'text/plain': new Blob([out.innerText], { type: 'text/plain' })
+                })]);
+                toast('✅ 복사 완료! 구글 문서에 붙여넣으세요');
+            } catch (e) {
+                const r = document.createRange(); r.selectNodeContents(out);
+                const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+                let ok = false; try { ok = document.execCommand('copy'); } catch (x) {}
+                s.removeAllRanges();
+                toast(ok ? '✅ 복사 완료!' : '⚠️ 복사에 실패했습니다');
+            }
+        }
+
+        async function copyPrompt() {
+            try { await navigator.clipboard.writeText(await buildPrompt()); toast('✅ 프롬프트 복사 완료!'); }
+            catch (e) { $('status').textContent = '⚠️ ' + e.message; }
+        }
+
+        $('go').addEventListener('click', generate);
+        $('ref').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); generate(); } });
+        $('copy').addEventListener('click', copyRich);
+        $('copyprompt').addEventListener('click', copyPrompt);
+        if (!$('key').value || !$('prompt').value) $('settings').open = true;
+        ensure(['nkrv', 'easy']).catch(() => {});
+</script>
+</body>
+</html>
