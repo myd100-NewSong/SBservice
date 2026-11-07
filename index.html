@@ -9,41 +9,30 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <!-- 고운 돋움 폰트 로드 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
     <style>
         :root { --bg:#f6f8fc; --card:#ffffff; --text:#111827; --muted:#6b7280; --border:#d9dfeb; --accent:#1d4ed8; }
         @media (prefers-color-scheme: dark) { :root { --bg:#0b0f19; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --border:#243047; --accent:#3b82f6; } }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); font-family: 'Gowun Dodum', -apple-system, sans-serif;
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
                padding: calc(env(safe-area-inset-top, 0px) + 28px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
         .wrap { max-width: 680px; margin: 0 auto; }
         h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
         .row { display: flex; gap: 8px; }
-        input, textarea, select { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
-        button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
+        input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+        button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        button.sub { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 11px 16px; }
         #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; }
-        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; line-height: 1.8; display: none; outline: none; font-size: 12pt; text-align: justify; }
-        #out:focus { border-color: var(--accent); }
-        #out h2 { font-size: 1.3rem; color: var(--accent); margin-bottom: 12px; }
-        #out h3 { font-size: 1.1rem; margin: 20px 0 6px; color: var(--accent); }
-        #out p { margin-bottom: 10px; } 
-        #out ul { padding-left: 20px; margin-bottom: 10px; }
-        #copy { display: none; width: 100%; margin-top: 14px; padding: 15px; font-size: 1.05rem; }
+        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; line-height: 1.8; display: none; }
+        #out h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 10px; }
+        #out h3 { font-size: 1.02rem; margin: 18px 0 6px; color: var(--accent); }
+        #out p { margin-bottom: 8px; } #out ul { padding-left: 20px; margin-bottom: 8px; }
+        #copy { display: none; width: 100%; margin-top: 12px; padding: 14px; }
         details { margin-top: 26px; color: var(--muted); }
-        summary { cursor: pointer; padding: 6px 0; font-weight: 600; }
+        summary { cursor: pointer; padding: 6px 0; }
         .set { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .btn-row { display: flex; gap: 8px; margin-top: 4px; }
-        .btn-row button { flex: 1; padding: 11px; font-size: 0.9rem; }
-        .btn-save { background: #059669; }
-        .btn-sub { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
         textarea { font-size: 0.9rem; }
         .ver { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 28px; }
-        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 1000; }
+        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; }
         #toast.show { opacity: 1; }
     </style>
 </head>
@@ -52,55 +41,27 @@
     <h1>새벽설교</h1>
     <div class="row">
         <input id="ref" type="text" placeholder="창40" autocomplete="off" enterkeyhint="go" autofocus>
-        <button id="go">작성</button>
-        <button id="btnComm" class="btn-commentary" title="해당 장의 공개 성경 주석 보기">📖 주석</button>
+        <button id="go">만들기</button>
     </div>
     <div id="status"></div>
     <div id="out" contenteditable="true"></div>
-    <!-- 버튼 텍스트 변경: 복사 후 구글 문서 열기 -->
-    <button id="copy">📋 서식 복사 & 구글 문서 열기</button>
+    <button id="copy">📄 복사 (구글 문서용)</button>
 
     <details id="settings">
         <summary>⚙️ 설정</summary>
         <div class="set">
             <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
-            <select id="model">
-                <option value="gemini-3.8-flash">Gemini 3.8 Flash (현재 AI Studio 전용)</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash (초고속 공식 모델)</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (안정 버전)</option>
-            </select>
+            <input id="model" type="text" placeholder="모델 이름" autocomplete="off">
             <textarea id="prompt" rows="8" placeholder="설교문 프롬프트를 한 번만 붙여넣으세요"></textarea>
-            <div class="btn-row">
-                <button id="copyprompt" class="btn-sub">📋 프롬프트만 복사</button>
-                <button id="savebtn" class="btn-save">💾 설정 저장</button>
-            </div>
+            <button class="sub" id="copyprompt">📋 프롬프트만 복사 (Gemini 앱에 직접 붙여넣을 때)</button>
         </div>
     </details>
-    <div class="ver">0.1</div>
+    <div class="ver">0.3</div>
 </div>
 <div id="toast"></div>
 
 <script>
         const BOOK_MAP = {"창": "창세기", "출": "출애굽기", "레": "레위기", "민": "민수기", "신": "신명기", "수": "여호수아", "삿": "사사기", "룻": "룻기", "삼상": "사무엘상", "삼하": "사무엘하", "왕상": "열왕기상", "왕하": "열왕기하", "대상": "역대상", "대하": "역대하", "스": "에스라", "느": "느헤미야", "에": "에스더", "욥": "욥기", "시": "시편", "잠": "잠언", "전": "전도서", "아": "아가", "사": "이사야", "렘": "예레미야", "애": "예레미야애가", "겔": "에스겔", "단": "다니엘", "호": "호세아", "욜": "요엘", "암": "아모스", "옵": "오바댜", "욘": "요나", "미": "미가", "나": "나훔", "합": "하박국", "습": "스바냐", "학": "학개", "슥": "스가랴", "말": "말라기", "마": "마태복음", "막": "마가복음", "눅": "누가복음", "요": "요한복음", "행": "사도행전", "롬": "로마서", "고전": "고린도전서", "고후": "고린도후서", "갈": "갈라디아서", "엡": "에베소서", "빌": "빌립보서", "골": "골로새서", "살전": "데살로니가전서", "살후": "데살로니가후서", "딤전": "디모데전서", "딤후": "디모데후서", "딛": "디도서", "몬": "빌레몬서", "히": "히브리서", "약": "야고보서", "벧전": "베드로전서", "벧후": "베드로후서", "요일": "요한일서", "요이": "요한이서", "요삼": "요한삼서", "유": "유다서", "계": "요한계시록"};
-        
-        const ENG_BOOK_MAP = {
-            "창": "genesis", "출": "exodus", "레": "leviticus", "민": "numbers", "신": "deuteronomy", 
-            "수": "joshua", "삿": "judges", "룻": "ruth", "삼상": "1_samuel", "삼하": "2_samuel", 
-            "왕상": "1_kings", "왕하": "2_kings", "대상": "1_chronicles", "대하": "2_chronicles", 
-            "스": "ezra", "느": "nehemiah", "에": "esther", "욥": "job", "시": "psalms", 
-            "잠": "proverbs", "전": "ecclesiastes", "아": "song_of_solomon", "사": "isaiah", 
-            "렘": "jeremiah", "애": "lamentations", "겔": "ezekiel", "단": "daniel", "호": "hosea", 
-            "욜": "joel", "암": "amos", "옵": "obadiah", "욘": "jonah", "미": "micah", 
-            "나": "nahum", "합": "habakkuk", "습": "zephaniah", "학": "haggai", "슥": "zechariah", 
-            "말": "malachi", "마": "matthew", "막": "mark", "눅": "luke", "요": "john", 
-            "행": "acts", "롬": "romans", "고전": "1_corinthians", "고후": "2_corinthians", 
-            "갈": "galatians", "엡": "ephesians", "빌": "philippians", "골": "colossians", 
-            "살전": "1_thessalonians", "살후": "2_thessalonians", "딤전": "1_timothy", 
-            "딤후": "2_timothy", "딛": "titus", "몬": "philemon", "히": "hebrews", 
-            "약": "james", "벧전": "1_peter", "벧후": "2_peter", "요일": "1_john", 
-            "요이": "2_john", "요삼": "3_john", "유": "jude", "계": "revelation"
-        };
-
         const REVERSE_BOOK_MAP = Object.fromEntries(Object.entries(BOOK_MAP).map(([k, v]) => [v, k]));
         const $ = id => document.getElementById(id);
         const VERS = { nkrv: { name: '개역개정', idx: 3 }, easy: { name: '쉬운성경', idx: 5 } };
@@ -109,10 +70,11 @@
 
         function toast(msg) {
             const t = $('toast'); t.textContent = msg; t.classList.add('show');
-            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
+            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800);
         }
         function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
+        // 데이터 파일: 한 번 받으면 브라우저에 보관
         function getData(file) {
             const url = 'data/' + file;
             const net = () => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r; });
@@ -121,7 +83,6 @@
                 .then(c => c.match(url).then(hit => hit ? hit.json() : net().then(r => { c.put(url, r.clone()); return r.json(); })))
                 .catch(() => net().then(r => r.json()));
         }
-
         async function ensure(keys) {
             metaP = metaP || getData('meta.json');
             const meta = await metaP;
@@ -134,24 +95,12 @@
             }));
         }
 
+        // 설정 저장 (이 기기에만)
         const KEYS = { key: 'sermon.gkey', model: 'sermon.gmodel', prompt: 'sermon.prompt' };
         Object.keys(KEYS).forEach(n => {
-            try { 
-                const saved = localStorage.getItem(KEYS[n]);
-                if (saved) $(n).value = saved;
-            } catch (e) {}
+            try { $(n).value = localStorage.getItem(KEYS[n]) || (n === 'model' ? 'gemini-3.8-flash' : ''); } catch (e) {}
+            $(n).addEventListener('change', () => { try { localStorage.setItem(KEYS[n], $(n).value.trim()); } catch (e) {} });
         });
-
-        function saveSettings() {
-            try {
-                Object.keys(KEYS).forEach(n => {
-                    localStorage.setItem(KEYS[n], $(n).value.trim());
-                });
-                toast('✅ 설정이 저장되었습니다!');
-            } catch (e) {
-                toast('⚠️ 저장 실패: ' + e.message);
-            }
-        }
 
         function parseRef(s) {
             const m = s.trim().match(/^([가-힣]+)\s*(\d+)\s*[장편]?$/);
@@ -160,31 +109,16 @@
             return BOOK_MAP[b] ? { book: b, name: BOOK_MAP[b], chapter: +m[2] } : null;
         }
 
-        function openCommentary() {
-            const ref = parseRef($('ref').value);
-            if (!ref) {
-                toast('⚠️ 먼저 성경 장을 입력해 주세요 (예: 창40, 요5)');
-                return;
-            }
-            const engBook = ENG_BOOK_MAP[ref.book];
-            if (engBook) {
-                const url = `https://biblehub.com/commentaries/${engBook}/${ref.chapter}-1.htm`;
-                window.open(url, '_blank');
-            } else {
-                toast('주석 주소를 찾을 수 없습니다.');
-            }
-        }
-
         async function buildPrompt() {
             const ref = parseRef($('ref').value);
-            if (!ref) throw new Error('예: 창40, 요5, 요한복음 5장');
+            if (!ref) throw new Error('예: 창40, 요3, 요한복음 3장');
             const tpl = $('prompt').value.trim();
             if (!tpl) { $('settings').open = true; throw new Error('설정에 프롬프트를 먼저 붙여넣어 주세요'); }
             await ensure(['nkrv', 'easy']);
             const rows = BIBLE.filter(r => r[0] === ref.book && r[1] === ref.chapter);
             if (!rows.length) throw new Error(`${ref.name} ${ref.chapter}장은 없습니다`);
             const body = Object.keys(VERS).map(k => `■ ${VERS[k].name}${k === 'nkrv' ? '' : ' (이해를 돕는 참고용)'}\n` +
-                rows.map(r => `${r[2]} ${r[VERS[k].idx]}`).join('\n')).join('\n\n');
+                rows.filter(r => r[VERS[k].idx]).map(r => `${r[2]} ${r[VERS[k].idx]}`).join('\n')).join('\n\n');
             const head = tpl.split('[성경책 이름]').join(ref.name).split('[숫자]').join(String(ref.chapter));
             return `${head}\n\n---\n[${ref.name} ${ref.chapter}장 본문]\n${body}\n\n※ 요약과 모든 인용은 개역개정 본문 기준으로 작성하고, 쉬운성경은 내용 이해를 위한 참고로만 사용하세요.`;
         }
@@ -217,126 +151,52 @@
                 const key = $('key').value.trim();
                 if (!key) { $('settings').open = true; throw new Error('설정에 Gemini API 키를 입력해 주세요'); }
                 const prompt = await buildPrompt();
-                
-                st.textContent = '⚡ 작성 준비 중...';
-                out.innerHTML = '';
-                out.style.display = 'block';
-                $('copy').style.display = 'none';
-
-                const model = $('model').value || 'gemini-3.8-flash';
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${key}`;
-                
-                const res = await fetch(url, {
+                st.textContent = '⏳ 설교문 작성 중… (1~2분 걸릴 수 있어요)';
+                out.style.display = 'none'; $('copy').style.display = 'none';
+                const model = $('model').value.trim() || 'gemini-3.8-flash';
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
                     method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ 
-                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                        generationConfig: { 
-                            maxOutputTokens: 8192
-                        } 
-                    })
+                    headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+                    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 16000 } })
                 });
-
-                if (!res.ok) {
-                    const errJson = await res.json().catch(() => ({}));
-                    throw new Error((errJson.error && errJson.error.message) || ('구글 API 오류 ' + res.status));
-                }
-
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder('utf-8');
-                let fullText = '';
-                let buffer = '';
-
-                st.textContent = '✍️ 설교문을 실시간으로 작성하고 있습니다...';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-
-                    for (const line of lines) {
-                        const cleanLine = line.trim();
-                        if (cleanLine.startsWith('data: ')) {
-                            const jsonStr = cleanLine.slice(6).trim();
-                            if (!jsonStr || jsonStr === '[DONE]') continue;
-                            try {
-                                const parsed = JSON.parse(jsonStr);
-                                const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                                if (chunk) {
-                                    fullText += chunk;
-                                    out.innerHTML = mdToHtml(fullText);
-                                }
-                            } catch (e) {}
-                        }
-                    }
-                }
-
-                if (!fullText.trim()) throw new Error('응답이 비어 있습니다.');
-                
-                $('copy').style.display = 'block';
-                st.textContent = '✅ 작성이 완료되었습니다!';
-            } catch (e) { 
-                st.textContent = '⚠️ ' + e.message; 
-            } finally {
-                busy = false; 
-                $('go').disabled = false;
-            }
+                const j = await res.json();
+                if (!res.ok) throw new Error((j.error && j.error.message) || ('오류 ' + res.status));
+                const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+                const text = parts.map(x => x.text || '').join('');
+                if (!text) throw new Error('응답이 비어 있습니다 (한도 초과나 안전 필터일 수 있어요)');
+                out.innerHTML = mdToHtml(text);
+                out.style.display = 'block'; $('copy').style.display = 'block';
+                st.textContent = '';
+            } catch (e) { st.textContent = '⚠️ ' + e.message; }
+            busy = false; $('go').disabled = false;
         }
 
-        // 구글 문서 규격(Gowun Dodum, 12pt, 양쪽맞춤) 주입 복사 및 문서 자동 열기
         async function copyRich() {
             const out = $('out');
-            
-            // Gowun Dodum, 12pt, 양쪽 맞춤, 줄간격 1.8이 적용된 HTML 래퍼 생성
-            const formattedHtml = `
-                <div style="font-family: 'Gowun Dodum', '고운돋움', sans-serif; font-size: 12pt; line-height: 1.8; text-align: justify; color: #111827;">
-                    ${out.innerHTML}
-                </div>
-            `;
-
             try {
                 await navigator.clipboard.write([new ClipboardItem({
-                    'text/html': new Blob([formattedHtml], { type: 'text/html' }),
+                    'text/html': new Blob([out.innerHTML], { type: 'text/html' }),
                     'text/plain': new Blob([out.innerText], { type: 'text/plain' })
                 })]);
-                
-                toast('✅ 서식 복사 완료! 구글 문서에서 Cmd + V를 누르세요.');
-                
-                // 새 탭으로 구글 문서(새 문서 생성) 즉시 열기
-                setTimeout(() => {
-                    window.open('https://docs.new', '_blank');
-                }, 400);
-
+                toast('✅ 복사 완료! 구글 문서에 붙여넣으세요');
             } catch (e) {
-                // 대체 복사 방식
                 const r = document.createRange(); r.selectNodeContents(out);
                 const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-                try { document.execCommand('copy'); } catch (x) {}
+                let ok = false; try { ok = document.execCommand('copy'); } catch (x) {}
                 s.removeAllRanges();
-                window.open('https://docs.new', '_blank');
-                toast('✅ 복사 완료! 새 구글 문서에 붙여넣으세요.');
+                toast(ok ? '✅ 복사 완료!' : '⚠️ 복사에 실패했습니다');
             }
         }
 
         async function copyPrompt() {
-            try { 
-                await navigator.clipboard.writeText(await buildPrompt()); 
-                toast('✅ 프롬프트 복사 완료!'); 
-            } catch (e) { 
-                $('status').textContent = '⚠️ ' + e.message; 
-            }
+            try { await navigator.clipboard.writeText(await buildPrompt()); toast('✅ 프롬프트 복사 완료!'); }
+            catch (e) { $('status').textContent = '⚠️ ' + e.message; }
         }
 
         $('go').addEventListener('click', generate);
         $('ref').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); generate(); } });
         $('copy').addEventListener('click', copyRich);
         $('copyprompt').addEventListener('click', copyPrompt);
-        $('savebtn').addEventListener('click', saveSettings);
-        $('btnComm').addEventListener('click', openCommentary);
-        
         if (!$('key').value || !$('prompt').value) $('settings').open = true;
         ensure(['nkrv', 'easy']).catch(() => {});
 </script>
