@@ -21,7 +21,7 @@
         input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
         button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        button.sub { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 11px 16px; }
+        .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
         #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; }
         #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; line-height: 1.8; display: none; outline: none; }
         #out:focus { border-color: var(--accent); }
@@ -31,8 +31,10 @@
         #out ul { padding-left: 20px; margin-bottom: 10px; }
         #copy { display: none; width: 100%; margin-top: 14px; padding: 14px; }
         details { margin-top: 26px; color: var(--muted); }
-        summary { cursor: pointer; padding: 6px 0; }
+        summary { cursor: pointer; padding: 6px 0; font-weight: 600; }
         .set { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .set button { padding: 14px; background: #059669; }
+        .set button:active { background: #047857; }
         textarea { font-size: 0.9rem; }
         .ver { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 28px; }
         #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 1000; }
@@ -44,7 +46,8 @@
     <h1>새벽설교</h1>
     <div class="row">
         <input id="ref" type="text" placeholder="창40" autocomplete="off" enterkeyhint="go" autofocus>
-        <button id="go">만들기</button>
+        <button id="go">작성</button>
+        <button id="btnComm" class="btn-commentary" title="해당 장의 공개 성경 주석 보기">📖 주석</button>
     </div>
     <div id="status"></div>
     <div id="out" contenteditable="true"></div>
@@ -56,7 +59,7 @@
             <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
             <input id="model" type="text" value="gemini-3.8-flash" placeholder="모델 이름" autocomplete="off">
             <textarea id="prompt" rows="8" placeholder="설교문 프롬프트를 한 번만 붙여넣으세요"></textarea>
-            <button class="sub" id="copyprompt">📋 프롬프트만 복사 (Gemini 앱에 직접 붙여넣을 때)</button>
+            <button id="savebtn">💾 설정 저장하기</button>
         </div>
     </details>
     <div class="ver">Gemini 3.8 Flash Engine</div>
@@ -65,6 +68,25 @@
 
 <script>
         const BOOK_MAP = {"창": "창세기", "출": "출애굽기", "레": "레위기", "민": "민수기", "신": "신명기", "수": "여호수아", "삿": "사사기", "룻": "룻기", "삼상": "사무엘상", "삼하": "사무엘하", "왕상": "열왕기상", "왕하": "열왕기하", "대상": "역대상", "대하": "역대하", "스": "에스라", "느": "느헤미야", "에": "에스더", "욥": "욥기", "시": "시편", "잠": "잠언", "전": "전도서", "아": "아가", "사": "이사야", "렘": "예레미야", "애": "예레미야애가", "겔": "에스겔", "단": "다니엘", "호": "호세아", "욜": "요엘", "암": "아모스", "옵": "오바댜", "욘": "요나", "미": "미가", "나": "나훔", "합": "하박국", "습": "스바냐", "학": "학개", "슥": "스가랴", "말": "말라기", "마": "마태복음", "막": "마가복음", "눅": "누가복음", "요": "요한복음", "행": "사도행전", "롬": "로마서", "고전": "고린도전서", "고후": "고린도후서", "갈": "갈라디아서", "엡": "에베소서", "빌": "빌립보서", "골": "골로새서", "살전": "데살로니가전서", "살후": "데살로니가후서", "딤전": "디모데전서", "딤후": "디모데후서", "딛": "디도서", "몬": "빌레몬서", "히": "히브리서", "약": "야고보서", "벧전": "베드로전서", "벧후": "베드로후서", "요일": "요한일서", "요이": "요한이서", "요삼": "요한삼서", "유": "유다서", "계": "요한계시록"};
+        
+        const ENG_BOOK_MAP = {
+            "창": "genesis", "출": "exodus", "레": "leviticus", "민": "numbers", "신": "deuteronomy", 
+            "수": "joshua", "삿": "judges", "룻": "ruth", "삼상": "1_samuel", "삼하": "2_samuel", 
+            "왕상": "1_kings", "왕하": "2_kings", "대상": "1_chronicles", "대하": "2_chronicles", 
+            "스": "ezra", "느": "nehemiah", "에": "esther", "욥": "job", "시": "psalms", 
+            "잠": "proverbs", "전": "ecclesiastes", "아": "song_of_solomon", "사": "isaiah", 
+            "렘": "jeremiah", "애": "lamentations", "겔": "ezekiel", "단": "daniel", "호": "hosea", 
+            "욜": "joel", "암": "amos", "옵": "obadiah", "욘": "jonah", "미": "micah", 
+            "나": "nahum", "합": "habakkuk", "습": "zephaniah", "학": "haggai", "슥": "zechariah", 
+            "말": "malachi", "마": "matthew", "막": "mark", "눅": "luke", "요": "john", 
+            "행": "acts", "롬": "romans", "고전": "1_corinthians", "고후": "2_corinthians", 
+            "갈": "galatians", "엡": "ephesians", "빌": "philippians", "골": "colossians", 
+            "살전": "1_thessalonians", "살후": "2_thessalonians", "딤전": "1_timothy", 
+            "딤후": "2_timothy", "딛": "titus", "몬": "philemon", "히": "hebrews", 
+            "약": "james", "벧전": "1_peter", "벧후": "2_peter", "요일": "1_john", 
+            "요이": "2_john", "요삼": "3_john", "유": "jude", "계": "revelation"
+        };
+
         const REVERSE_BOOK_MAP = Object.fromEntries(Object.entries(BOOK_MAP).map(([k, v]) => [v, k]));
         const $ = id => document.getElementById(id);
         const VERS = { nkrv: { name: '개역개정', idx: 3 }, easy: { name: '쉬운성경', idx: 5 } };
@@ -73,7 +95,7 @@
 
         function toast(msg) {
             const t = $('toast'); t.textContent = msg; t.classList.add('show');
-            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800);
+            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2000);
         }
         function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
@@ -98,24 +120,45 @@
             }));
         }
 
-        // 설정 저장
         const KEYS = { key: 'sermon.gkey', model: 'sermon.gmodel', prompt: 'sermon.prompt' };
         Object.keys(KEYS).forEach(n => {
             try { 
                 const saved = localStorage.getItem(KEYS[n]);
-                // gemini-3.8-flash 를 기본값으로 유지
                 $(n).value = saved || (n === 'model' ? 'gemini-3.8-flash' : ''); 
             } catch (e) {}
-            $(n).addEventListener('change', () => { 
-                try { localStorage.setItem(KEYS[n], $(n).value.trim()); } catch (e) {} 
-            });
         });
+
+        function saveSettings() {
+            try {
+                Object.keys(KEYS).forEach(n => {
+                    localStorage.setItem(KEYS[n], $(n).value.trim());
+                });
+                toast('✅ 설정이 안전하게 저장되었습니다!');
+            } catch (e) {
+                toast('⚠️ 저장 실패: ' + e.message);
+            }
+        }
 
         function parseRef(s) {
             const m = s.trim().match(/^([가-힣]+)\s*(\d+)\s*[장편]?$/);
             if (!m) return null;
             const b = REVERSE_BOOK_MAP[m[1]] || m[1];
             return BOOK_MAP[b] ? { book: b, name: BOOK_MAP[b], chapter: +m[2] } : null;
+        }
+
+        function openCommentary() {
+            const ref = parseRef($('ref').value);
+            if (!ref) {
+                toast('⚠️ 먼저 성경 장을 입력해 주세요 (예: 창40)');
+                return;
+            }
+            const engBook = ENG_BOOK_MAP[ref.book];
+            if (engBook) {
+                const url = `https://biblehub.com/commentaries/${engBook}/${ref.chapter}-1.htm`;
+                window.open(url, '_blank');
+            } else {
+                toast('주석 주소를 찾을 수 없습니다.');
+            }
         }
 
         async function buildPrompt() {
@@ -161,14 +204,12 @@
                 if (!key) { $('settings').open = true; throw new Error('설정에 Gemini API 키를 입력해 주세요'); }
                 const prompt = await buildPrompt();
                 
-                st.textContent = '⚡ 설교문 작성 시작...';
+                st.textContent = '⚡ 작성 준비 중...';
                 out.innerHTML = '';
                 out.style.display = 'block';
                 $('copy').style.display = 'none';
 
                 const model = $('model').value.trim() || 'gemini-3.8-flash';
-                
-                // 스트리밍(SSE) 호출: 실시간으로 글자가 화면에 찍힘
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${key}`;
                 
                 const res = await fetch(url, {
@@ -178,7 +219,6 @@
                         contents: [{ role: 'user', parts: [{ text: prompt }] }],
                         generationConfig: { 
                             maxOutputTokens: 8192,
-                            // Flash 모델의 내부 생각 시간을 0으로 꺼서 즉시 답변 시작
                             thinkingConfig: { thinkingBudget: 0 }
                         } 
                     })
@@ -194,7 +234,7 @@
                 let fullText = '';
                 let buffer = '';
 
-                st.textContent = '✍️ 실시간으로 작성 중입니다...';
+                st.textContent = '✍️ 실시간으로 설교문을 작성하고 있습니다...';
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -202,7 +242,7 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
-                    buffer = lines.pop(); // 완전하지 않은 마지막 줄 보존
+                    buffer = lines.pop();
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
@@ -213,7 +253,7 @@
                                 const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
                                 if (chunk) {
                                     fullText += chunk;
-                                    out.innerHTML = mdToHtml(fullText); // 생성되는 족족 화면에 업데이트
+                                    out.innerHTML = mdToHtml(fullText);
                                 }
                             } catch (e) {}
                         }
@@ -249,15 +289,12 @@
             }
         }
 
-        async function copyPrompt() {
-            try { await navigator.clipboard.writeText(await buildPrompt()); toast('✅ 프롬프트 복사 완료!'); }
-            catch (e) { $('status').textContent = '⚠️ ' + e.message; }
-        }
-
         $('go').addEventListener('click', generate);
         $('ref').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); generate(); } });
         $('copy').addEventListener('click', copyRich);
-        $('copyprompt').addEventListener('click', copyPrompt);
+        $('savebtn').addEventListener('click', saveSettings);
+        $('btnComm').addEventListener('click', openCommentary);
+        
         if (!$('key').value || !$('prompt').value) $('settings').open = true;
         ensure(['nkrv', 'easy']).catch(() => {});
 </script>
