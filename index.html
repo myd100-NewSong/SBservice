@@ -9,11 +9,15 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <!-- 고운 돋움 폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
     <style>
         :root { --bg:#f6f8fc; --card:#ffffff; --text:#111827; --muted:#6b7280; --border:#d9dfeb; --accent:#1d4ed8; }
         @media (prefers-color-scheme: dark) { :root { --bg:#0b0f19; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --border:#243047; --accent:#3b82f6; } }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        body { background: var(--bg); color: var(--text); font-family: 'Gowun Dodum', -apple-system, sans-serif;
                padding: calc(env(safe-area-inset-top, 0px) + 28px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
         .wrap { max-width: 680px; margin: 0 auto; }
         h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
@@ -23,13 +27,13 @@
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
         #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; }
-        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; line-height: 1.8; display: none; outline: none; }
+        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; line-height: 1.8; display: none; outline: none; font-size: 12pt; text-align: justify; }
         #out:focus { border-color: var(--accent); }
-        #out h2 { font-size: 1.25rem; color: var(--accent); margin-bottom: 12px; }
-        #out h3 { font-size: 1.05rem; margin: 20px 0 6px; color: var(--accent); }
+        #out h2 { font-size: 1.3rem; color: var(--accent); margin-bottom: 12px; }
+        #out h3 { font-size: 1.1rem; margin: 20px 0 6px; color: var(--accent); }
         #out p { margin-bottom: 10px; } 
         #out ul { padding-left: 20px; margin-bottom: 10px; }
-        #copy { display: none; width: 100%; margin-top: 14px; padding: 14px; }
+        #copy { display: none; width: 100%; margin-top: 14px; padding: 15px; font-size: 1.05rem; }
         details { margin-top: 26px; color: var(--muted); }
         summary { cursor: pointer; padding: 6px 0; font-weight: 600; }
         .set { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
@@ -53,7 +57,8 @@
     </div>
     <div id="status"></div>
     <div id="out" contenteditable="true"></div>
-    <button id="copy">📄 복사 (구글 문서용)</button>
+    <!-- 버튼 텍스트 변경: 복사 후 구글 문서 열기 -->
+    <button id="copy">📋 서식 복사 & 구글 문서 열기</button>
 
     <details id="settings">
         <summary>⚙️ 설정</summary>
@@ -104,7 +109,7 @@
 
         function toast(msg) {
             const t = $('toast'); t.textContent = msg; t.classList.add('show');
-            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2000);
+            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
         }
         function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
@@ -228,7 +233,6 @@
                         contents: [{ role: 'user', parts: [{ text: prompt }] }],
                         generationConfig: { 
                             maxOutputTokens: 8192
-                            // 오류를 유발하던 thinkingConfig 옵션 제거
                         } 
                     })
                 });
@@ -251,7 +255,7 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
-                    buffer = lines.pop(); // 완전하지 않은 마지막 줄 보존
+                    buffer = lines.pop();
 
                     for (const line of lines) {
                         const cleanLine = line.trim();
@@ -263,14 +267,14 @@
                                 const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
                                 if (chunk) {
                                     fullText += chunk;
-                                    out.innerHTML = mdToHtml(fullText); // 실시간 렌더링
+                                    out.innerHTML = mdToHtml(fullText);
                                 }
                             } catch (e) {}
                         }
                     }
                 }
 
-                if (!fullText.trim()) throw new Error('응답이 비어 있습니다. 모델 설정을 확인해 주세요.');
+                if (!fullText.trim()) throw new Error('응답이 비어 있습니다.');
                 
                 $('copy').style.display = 'block';
                 st.textContent = '✅ 작성이 완료되었습니다!';
@@ -282,20 +286,38 @@
             }
         }
 
+        // 구글 문서 규격(Gowun Dodum, 12pt, 양쪽맞춤) 주입 복사 및 문서 자동 열기
         async function copyRich() {
             const out = $('out');
+            
+            // Gowun Dodum, 12pt, 양쪽 맞춤, 줄간격 1.8이 적용된 HTML 래퍼 생성
+            const formattedHtml = `
+                <div style="font-family: 'Gowun Dodum', '고운돋움', sans-serif; font-size: 12pt; line-height: 1.8; text-align: justify; color: #111827;">
+                    ${out.innerHTML}
+                </div>
+            `;
+
             try {
                 await navigator.clipboard.write([new ClipboardItem({
-                    'text/html': new Blob([out.innerHTML], { type: 'text/html' }),
+                    'text/html': new Blob([formattedHtml], { type: 'text/html' }),
                     'text/plain': new Blob([out.innerText], { type: 'text/plain' })
                 })]);
-                toast('✅ 복사 완료! 구글 문서에 붙여넣으세요');
+                
+                toast('✅ 서식 복사 완료! 구글 문서에서 Cmd + V를 누르세요.');
+                
+                // 새 탭으로 구글 문서(새 문서 생성) 즉시 열기
+                setTimeout(() => {
+                    window.open('https://docs.new', '_blank');
+                }, 400);
+
             } catch (e) {
+                // 대체 복사 방식
                 const r = document.createRange(); r.selectNodeContents(out);
                 const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-                let ok = false; try { ok = document.execCommand('copy'); } catch (x) {}
+                try { document.execCommand('copy'); } catch (x) {}
                 s.removeAllRanges();
-                toast(ok ? '✅ 복사 완료!' : '⚠️ 복사에 실패했습니다');
+                window.open('https://docs.new', '_blank');
+                toast('✅ 복사 완료! 새 구글 문서에 붙여넣으세요.');
             }
         }
 
