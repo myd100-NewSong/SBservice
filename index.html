@@ -28,7 +28,6 @@
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         
         .btn-main { background: #1a73e8; padding: 0 22px; font-size: 1.05rem; }
-        .btn-comm { background: #475569; padding: 0 14px; font-size: 0.95rem; }
         
         .sub-bar { display: flex; gap: 8px; margin-top: 10px; }
         .sub-bar button { flex: 1; padding: 12px; font-size: 0.95rem; }
@@ -58,9 +57,7 @@
     
     <div class="row">
         <input id="ref" type="text" placeholder="창40, 출6, 요5" autocomplete="off" enterkeyhint="go" autofocus>
-        <!-- 제미나이 본 서버로 즉시 작성 -->
         <button id="goGemini" class="btn-main">✨ Gemini로 작성</button>
-        <button id="btnComm" class="btn-comm" title="해당 장의 공개 성경 주석 보기">📖 주석</button>
     </div>
 
     <div class="sub-bar">
@@ -74,8 +71,8 @@
         💡 <strong>가장 빠른 새벽설교 작성법</strong>
         <ol>
             <li>성경 장(예: <strong>출6</strong>) 입력 후 <strong>[✨ Gemini로 작성]</strong> 클릭</li>
-            <li>본문과 프롬프트가 <strong>자동 복사</strong>되며 구글 제미나이 창이 열립니다.</li>
-            <li>대화창에서 <strong>붙여넣기(Cmd + V)</strong> 후 엔터를 치면 과부하 에러 없이 즉시 작성됩니다!</li>
+            <li>본문과 프롬프트가 <strong>자동 복사</strong>되며 창이 열립니다.</li>
+            <li>대화창에서 <strong>붙여넣기(Cmd + V)</strong> 후 엔터를 치세요!</li>
         </ol>
     </div>
 
@@ -87,31 +84,12 @@
         </div>
     </details>
 
-    <div class="ver">0.5.0 (Gemini Web Direct)</div>
+    <div class="ver">0.5.0</div>
 </div>
 <div id="toast"></div>
 
 <script>
         const BOOK_MAP = {"창": "창세기", "출": "출애굽기", "레": "레위기", "민": "민수기", "신": "신명기", "수": "여호수아", "삿": "사사기", "룻": "룻기", "삼상": "사무엘상", "삼하": "사무엘하", "왕상": "열왕기상", "왕하": "열왕기하", "대상": "역대상", "대하": "역대하", "스": "에스라", "느": "느헤미야", "에": "에스더", "욥": "욥기", "시": "시편", "잠": "잠언", "전": "전도서", "아": "아가", "사": "이사야", "렘": "예레미야", "애": "예레미야애가", "겔": "에스겔", "단": "다니엘", "호": "호세아", "욜": "요엘", "암": "아모스", "옵": "오바댜", "욘": "요나", "미": "미가", "나": "나훔", "합": "하박국", "습": "스바냐", "학": "학개", "슥": "스가랴", "말": "말라기", "마": "마태복음", "막": "마가복음", "눅": "누가복음", "요": "요한복음", "행": "사도행전", "롬": "로마서", "고전": "고린도전서", "고후": "고린도후서", "갈": "갈라디아서", "엡": "에베소서", "빌": "빌립보서", "골": "골로새서", "살전": "데살로니가전서", "살후": "데살로니가후서", "딤전": "디모데전서", "딤후": "디모데후서", "딛": "디도서", "몬": "빌레몬서", "히": "히브리서", "약": "야고보서", "벧전": "베드로전서", "벧후": "베드로후서", "요일": "요한일서", "요이": "요한이서", "요삼": "요한삼서", "유": "유다서", "계": "요한계시록"};
-        
-        const ENG_BOOK_MAP = {
-            "창": "genesis", "출": "exodus", "레": "leviticus", "민": "numbers", "신": "deuteronomy", 
-            "수": "joshua", "삿": "judges", "룻": "ruth", "삼상": "1_samuel", "삼하": "2_samuel", 
-            "왕상": "1_kings", "왕하": "2_kings", "대상": "1_chronicles", "대하": "2_chronicles", 
-            "스": "ezra", "느": "nehemiah", "에": "esther", "욥": "job", "시": "psalms", 
-            "잠": "proverbs", "전": "ecclesiastes", "아": "song_of_solomon", "사": "isaiah", 
-            "렘": "jeremiah", "애": "lamentations", "겔": "ezekiel", "단": "daniel", "호": "hosea", 
-            "욜": "joel", "암": "amos", "옵": "obadiah", "욘": "jonah", "미": "micah", 
-            "나": "nahum", "합": "habakkuk", "습": "zephaniah", "학": "haggai", "슥": "zechariah", 
-            "말": "malachi", "마": "matthew", "막": "mark", "눅": "luke", "요": "john", 
-            "행": "acts", "롬": "romans", "고전": "1_corinthians", "고후": "2_corinthians", 
-            "갈": "galatians", "엡": "ephesians", "빌": "philippians", "골": "colossians", 
-            "살전": "1_thessalonians", "살후": "2_thessalonians", "딤전": "1_timothy", 
-            "딤후": "2_timothy", "딛": "titus", "몬": "philemon", "히": "hebrews", 
-            "약": "james", "벧전": "1_peter", "벧후": "2_peter", "요일": "1_john", 
-            "요이": "2_john", "요삼": "3_john", "유": "jude", "계": "revelation"
-        };
-
         const REVERSE_BOOK_MAP = Object.fromEntries(Object.entries(BOOK_MAP).map(([k, v]) => [v, k]));
         const $ = id => document.getElementById(id);
         const VERS = { nkrv: { name: '개역개정', idx: 3 } };
@@ -168,18 +146,6 @@
             return BOOK_MAP[b] ? { book: b, name: BOOK_MAP[b], chapter: +m[2] } : null;
         }
 
-        function openCommentary() {
-            const ref = parseRef($('ref').value);
-            if (!ref) {
-                toast('⚠️ 성경 장을 입력해 주세요 (예: 창40, 출6)');
-                return;
-            }
-            const engBook = ENG_BOOK_MAP[ref.book];
-            if (engBook) {
-                window.open(`https://biblehub.com/commentaries/${engBook}/${ref.chapter}-1.htm`, '_blank');
-            }
-        }
-
         async function buildFullPrompt() {
             const ref = parseRef($('ref').value);
             if (!ref) throw new Error('예: 창40, 출6, 요5 형태로 입력해 주세요');
@@ -196,7 +162,6 @@
             return `${head}\n\n---\n[${ref.name} ${ref.chapter}장 본문]\n${bibleText}\n\n※ 위 지침에 따라 은혜로운 새벽설교문을 즉시 작성해 주세요.`;
         }
 
-        // 제미나이 / 클로드 다이렉트 실행기
         async function runDirect(targetUrl, serviceName) {
             const st = $('status');
             try {
@@ -220,7 +185,6 @@
         $('goGemini').addEventListener('click', () => runDirect('https://gemini.google.com/', 'Gemini'));
         $('goClaude').addEventListener('click', () => runDirect('https://claude.ai/new', 'Claude'));
 
-        // 엔터키 누르면 바로 Gemini로 실행
         $('ref').addEventListener('keydown', e => { 
             if (e.key === 'Enter') { 
                 e.preventDefault(); 
@@ -229,7 +193,6 @@
         });
 
         $('savebtn').addEventListener('click', saveSettings);
-        $('btnComm').addEventListener('click', openCommentary);
         $('openDocs').addEventListener('click', () => { window.open('https://docs.new', '_blank'); });
 
         if (!$('prompt').value) $('settings').open = true;
