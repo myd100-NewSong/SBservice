@@ -69,7 +69,6 @@
             </div>
         </div>
     </details>
-    <!-- 버전 0.5.0 표기 -->
     <div class="ver">0.5.0</div>
 </div>
 <div id="toast"></div>
@@ -107,7 +106,6 @@
         }
         function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-        // 데이터 캐시 버전 0.5.0
         const DATA_VER = '0.5.0';
         if (window.caches) caches.keys().then(ks => ks.filter(k => k.startsWith('bible-data-') && k !== 'bible-data-' + DATA_VER).forEach(k => caches.delete(k))).catch(() => {});
 
@@ -206,6 +204,67 @@
             return h + (ul ? '</ul>' : '');
         }
 
+        // 구글 API 버전별 스마트 스트리밍 호출
+        async function fetchStream(model, key, systemInstruction, userPrompt, onChunk) {
+            // gemini-1.5 계열은 공식 정식 버전 v1, 3.8 등은 실험 버전 v1beta로 자동 주소 매핑
+            const is15 = model.includes('1.5');
+            const apiVer = is15 ? 'v1' : 'v1beta';
+            const realModel = is15 ? 'gemini-1.5-flash-latest' : model;
+
+            const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(realModel)}:streamGenerateContent?alt=sse&key=${key}`;
+            
+            const reqBody = {
+                contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                generationConfig: { maxOutputTokens: 8192 }
+            };
+            // v1beta일 때만 system_instruction 완벽 지원
+            if (!is15) {
+                reqBody.system_instruction = { parts: [{ text: systemInstruction }] };
+            } else {
+                reqBody.contents[0].parts[0].text = `${systemInstruction}\n\n---\n${userPrompt}`;
+            }
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(reqBody)
+            });
+
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error((errJson.error && errJson.error.message) || ('API 오류: ' + res.status));
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let full = '', buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('data: ')) {
+                        const jsonStr = trimmed.slice(6).trim();
+                        if (!jsonStr || jsonStr === '[DONE]') continue;
+                        try {
+                            const parsed = JSON.parse(jsonStr);
+                            const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (chunk) {
+                                full += chunk;
+                                onChunk(full);
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+            return full;
+        }
+
         let busy = false;
         async function generate() {
             if (busy) return;
@@ -215,64 +274,35 @@
                 const key = $('key').value.trim();
                 if (!key) { $('settings').open = true; throw new Error('Gemini API 키를 입력해 주세요'); }
                 
-                st.textContent = '⚡ 본문 분석 및 작성 시작...';
+                st.textContent = '⚡ 본문 분석 중...';
                 out.innerHTML = '';
                 out.style.display = 'block';
                 $('copy').style.display = 'none';
 
                 const { systemInstruction, userPrompt } = await buildPayload();
-                const model = $('model').value.trim() || 'gemini-3.8-flash';
-
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${key}`;
-                
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ 
-                        system_instruction: { parts: [{ text: systemInstruction }] },
-                        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-                        generationConfig: { maxOutputTokens: 8192 }
-                    })
-                });
-
-                if (!res.ok) {
-                    const errJson = await res.json().catch(() => ({}));
-                    throw new Error((errJson.error && errJson.error.message) || ('API 오류: ' + res.status));
-                }
-
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder('utf-8');
-                let fullText = '';
-                let buffer = '';
+                let model = $('model').value.trim() || 'gemini-3.8-flash';
+                let textResult = '';
 
                 st.textContent = '✍️ 실시간으로 설교문을 작성하고 있습니다...';
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (trimmed.startsWith('data: ')) {
-                            const jsonStr = trimmed.slice(6).trim();
-                            if (!jsonStr || jsonStr === '[DONE]') continue;
-                            try {
-                                const parsed = JSON.parse(jsonStr);
-                                const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                                if (chunk) {
-                                    fullText += chunk;
-                                    out.innerHTML = mdToHtml(fullText);
-                                }
-                            } catch (e) {}
-                        }
+                try {
+                    // 1차 시도 (입력된 모델)
+                    textResult = await fetchStream(model, key, systemInstruction, userPrompt, chunk => {
+                        out.innerHTML = mdToHtml(chunk);
+                    });
+                } catch (err) {
+                    // 3.8 서버 폭주(demand) 발생 시, 100% 열려 있는 공식 1.5-flash 정식 엔드포인트로 즉각 우회!
+                    if (err.message.includes('demand') || err.message.includes('not found')) {
+                        st.textContent = '🔄 공식 안정 엔진(v1/gemini-1.5-flash)으로 즉시 전환 작성 중...';
+                        textResult = await fetchStream('gemini-1.5-flash', key, systemInstruction, userPrompt, chunk => {
+                            out.innerHTML = mdToHtml(chunk);
+                        });
+                    } else {
+                        throw err;
                     }
                 }
 
-                if (!fullText.trim()) throw new Error('응답이 비어 있습니다. 잠시 후 다시 시도해 주세요.');
+                if (!textResult.trim()) throw new Error('응답이 비어 있습니다. 잠시 후 다시 시도해 주세요.');
 
                 $('copy').style.display = 'block';
                 st.textContent = '✅ 작성이 완료되었습니다!';
