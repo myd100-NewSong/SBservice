@@ -22,10 +22,19 @@
         h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
         .row { display: flex; gap: 8px; }
         input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
-        button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
+        
+        /* 버튼 스타일 */
+        button { padding: 0 16px; border-radius: 12px; border: none; color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .action-grid { display: flex; gap: 8px; margin-top: 10px; }
+        .action-grid button { flex: 1; padding: 13px 0; font-size: 1rem; }
+        
+        .btn-gemini { background: #1a73e8; } /* 구글 블루 */
+        .btn-claude { background: #d97706; } /* 클로드 앤트로픽 오렌지 */
         .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
         .btn-gdocs { background: #059669; width: 100%; margin-top: 14px; padding: 14px; font-size: 1.02rem; }
+        
         #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; font-weight: 500; }
         details { margin-top: 26px; color: var(--muted); }
         summary { cursor: pointer; padding: 6px 0; font-weight: 600; }
@@ -44,19 +53,23 @@
     <h1>새벽설교</h1>
     <div class="row">
         <input id="ref" type="text" placeholder="창40, 출6, 요5" autocomplete="off" enterkeyhint="go" autofocus>
-        <!-- 원클릭 자동 복사 & AI Studio 열기 -->
-        <button id="go">🚀 AI Studio로 작성</button>
         <button id="btnComm" class="btn-commentary" title="해당 장의 공개 성경 주석 보기">📖 주석</button>
     </div>
     
+    <!-- AI 선택 버튼 영역 -->
+    <div class="action-grid">
+        <button id="goGemini" class="btn-gemini">✨ Gemini로 작성</button>
+        <button id="goClaude" class="btn-claude">🟠 Claude로 작성</button>
+    </div>
+
     <div id="status"></div>
 
     <div class="guide-box">
         💡 <strong>사용 방법</strong>
         <ol>
-            <li>성경 장 입력 후 <strong>[🚀 AI Studio로 작성]</strong> 클릭</li>
-            <li>프롬프트가 자동 복사되며 <strong>Google AI Studio</strong>가 열립니다.</li>
-            <li>창에서 <strong>Cmd + V (붙여넣기)</strong> 후 엔터를 치면 즉시 작성됩니다!</li>
+            <li>성경 장 입력 후 원하는 AI(<strong>Gemini</strong> 또는 <strong>Claude</strong>) 버튼 클릭</li>
+            <li>본문과 프롬프트가 자동 복사되며 해당 AI 웹사이트가 열립니다.</li>
+            <li>열린 창의 대화창에서 <strong>Cmd + V (붙여넣기)</strong> 후 엔터를 치세요!</li>
         </ol>
     </div>
 
@@ -69,7 +82,7 @@
             <button id="savebtn" class="btn-save">💾 프롬프트 저장</button>
         </div>
     </details>
-    <div class="ver">0.5.0 (No-API Direct Engine)</div>
+    <div class="ver">0.5.0</div>
 </div>
 <div id="toast"></div>
 
@@ -178,31 +191,39 @@
             return `${head}\n\n---\n[${ref.name} ${ref.chapter}장 본문]\n${bibleText}\n\n※ 위 지침에 따라 은혜로운 새벽설교문을 즉시 작성해 주세요.`;
         }
 
-        // 원클릭: 복사 + AI Studio 자동 열기
-        async function runDirect() {
+        // 공통 실행 핸들러 (대상 서비스 URL 전달)
+        async function runWithService(targetUrl, serviceName) {
             const st = $('status');
             try {
                 st.textContent = '⏳ 본문 및 프롬프트 준비 중...';
                 const fullPrompt = await buildFullPrompt();
                 
-                // 클립보드에 전체 내용 자동 복사
                 await navigator.clipboard.writeText(fullPrompt);
                 
-                toast('📋 프롬프트 복사 완료! 새 창에서 Cmd + V를 누르세요.');
-                st.textContent = '✅ 프롬프트가 복사되었습니다. 열린 AI Studio 창에서 Cmd + V 후 엔터를 누르세요!';
+                toast(`📋 복사 완료! ${serviceName}에서 Cmd + V를 누르세요.`);
+                st.textContent = `✅ 복사 완료! 열린 ${serviceName} 창에서 Cmd + V 후 엔터를 누르세요.`;
                 
-                // AI Studio 창 바로 열기
                 setTimeout(() => {
-                    window.open('https://aistudio.google.com/prompts/new_chat', '_blank');
-                }, 300);
+                    window.open(targetUrl, '_blank');
+                }, 250);
 
             } catch (e) {
                 st.textContent = '⚠️ ' + e.message;
             }
         }
 
-        $('go').addEventListener('click', runDirect);
-        $('ref').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runDirect(); } });
+        // 제미나이 / 클로드 버튼 이벤트 연결
+        $('goGemini').addEventListener('click', () => runWithService('https://gemini.google.com/', 'Gemini'));
+        $('goClaude').addEventListener('click', () => runWithService('https://claude.ai/new', 'Claude'));
+
+        // 엔터키 입력 시 기본값은 Gemini로 실행
+        $('ref').addEventListener('keydown', e => { 
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                runWithService('https://gemini.google.com/', 'Gemini'); 
+            } 
+        });
+
         $('savebtn').addEventListener('click', saveSettings);
         $('btnComm').addEventListener('click', openCommentary);
         $('openDocs').addEventListener('click', () => { window.open('https://docs.new', '_blank'); });
