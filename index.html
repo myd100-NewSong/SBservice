@@ -21,7 +21,7 @@
         .wrap { max-width: 680px; margin: 0 auto; }
         h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
         .row { display: flex; gap: 8px; }
-        input, textarea, select { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+        input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
         button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
@@ -61,11 +61,7 @@
         <summary>⚙️ 설정</summary>
         <div class="set">
             <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
-            <select id="model">
-                <option value="gemini-3.8-flash">Gemini 3.8 Flash (우선 사용, 폭주 시 2.0 자동 전환)</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash (초고속 - 가장 쾌적함)</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (안정 버전)</option>
-            </select>
+            <input id="model" type="text" value="gemini-3.8-flash" readonly style="background: rgba(125,125,125,0.1); cursor: not-allowed;" title="구글 권장 단일 모델로 고정됨">
             <textarea id="prompt" rows="8" placeholder="설교문 프롬프트를 한 번만 붙여넣으세요"></textarea>
             <div class="btn-row">
                 <button id="copyprompt" class="btn-sub">📋 프롬프트만 복사</button>
@@ -135,7 +131,7 @@
             }));
         }
 
-        const KEYS = { key: 'sermon.gkey', model: 'sermon.gmodel', prompt: 'sermon.prompt' };
+        const KEYS = { key: 'sermon.gkey', prompt: 'sermon.prompt' };
         Object.keys(KEYS).forEach(n => {
             try { 
                 const saved = localStorage.getItem(KEYS[n]);
@@ -148,6 +144,7 @@
                 Object.keys(KEYS).forEach(n => {
                     localStorage.setItem(KEYS[n], $(n).value.trim());
                 });
+                localStorage.setItem('sermon.gmodel', 'gemini-3.8-flash');
                 toast('✅ 설정이 저장되었습니다!');
             } catch (e) {
                 toast('⚠️ 저장 실패: ' + e.message);
@@ -164,7 +161,7 @@
         function openCommentary() {
             const ref = parseRef($('ref').value);
             if (!ref) {
-                toast('⚠️ 먼저 성경 장을 입력해 주세요 (예: 창40, 출5)');
+                toast('⚠️ 먼저 성경 장을 입력해 주세요 (예: 창40, 출6)');
                 return;
             }
             const engBook = ENG_BOOK_MAP[ref.book];
@@ -178,7 +175,7 @@
 
         async function buildPrompt() {
             const ref = parseRef($('ref').value);
-            if (!ref) throw new Error('예: 창40, 출5, 요한복음 5장');
+            if (!ref) throw new Error('예: 창40, 출6, 요한복음 5장');
             const tpl = $('prompt').value.trim();
             if (!tpl) { $('settings').open = true; throw new Error('설정에 프롬프트를 먼저 붙여넣어 주세요'); }
             await ensure(['nkrv', 'easy']);
@@ -209,29 +206,6 @@
             return h + (ul ? '</ul>' : '');
         }
 
-        // 구글 API 요청 헬퍼
-        async function callGemini(modelName, prompt, key) {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`, {
-                method: 'POST',
-                headers: { 
-                    'content-type': 'application/json',
-                    'x-goog-api-key': key 
-                },
-                body: JSON.stringify({ 
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    generationConfig: { maxOutputTokens: 8192 } 
-                })
-            });
-            const j = await res.json();
-            if (!res.ok) {
-                const errMsg = (j.error && j.error.message) || '';
-                // 503 또는 High demand 일 때 에러 던지기
-                throw { status: res.status, message: errMsg };
-            }
-            const parts = j.candidates?.[0]?.content?.parts || [];
-            return parts.map(x => x.text || '').join('');
-        }
-
         let busy = false;
         async function generate() {
             if (busy) return;
@@ -244,26 +218,33 @@
                 st.textContent = '📖 성경 본문 분석 중...';
                 const prompt = await buildPrompt();
                 
-                st.textContent = '⚡ 설교문 작성 중... (약 5~10초 소요)';
+                st.textContent = '⚡ Gemini 3.8 Flash로 설교문 작성 중...';
                 out.innerHTML = '';
                 out.style.display = 'none';
                 $('copy').style.display = 'none';
 
-                let targetModel = $('model').value || 'gemini-3.8-flash';
-                let fullText = '';
+                // 구글이 강제 지정한 모델: gemini-3.8-flash 단일 정통 호출
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`, {
+                    method: 'POST',
+                    headers: { 
+                        'content-type': 'application/json',
+                        'x-goog-api-key': key 
+                    },
+                    body: JSON.stringify({ 
+                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                        generationConfig: { 
+                            maxOutputTokens: 8192
+                        } 
+                    })
+                });
 
-                try {
-                    // 1차 시도: 선택한 모델
-                    fullText = await callGemini(targetModel, prompt, key);
-                } catch (err) {
-                    // 구글 서버 폭주(503, 429) 발생 시 즉시 초고속 2.0으로 자동 우회!
-                    if (targetModel !== 'gemini-2.0-flash' && (err.status === 503 || err.status === 429 || (err.message && err.message.includes('demand')))) {
-                        st.textContent = '🔄 서버 혼잡으로 2.0 초고속 엔진으로 즉시 자동 전환하여 작성 중...';
-                        fullText = await callGemini('gemini-2.0-flash', prompt, key);
-                    } else {
-                        throw new Error(err.message || ('구글 API 오류 ' + err.status));
-                    }
+                const j = await res.json();
+                if (!res.ok) {
+                    throw new Error((j.error && j.error.message) || ('구글 API 오류: ' + res.status));
                 }
+
+                const parts = j.candidates?.[0]?.content?.parts || [];
+                const fullText = parts.map(x => x.text || '').join('');
 
                 if (!fullText.trim()) throw new Error('응답이 비어 있습니다. 잠시 후 다시 시도해 주세요.');
 
@@ -293,7 +274,7 @@
                     'text/plain': new Blob([out.innerText], { type: 'text/plain' })
                 })]);
                 
-                toast('✅ 서식 복사 완료! 구글 문서에서 Cmd + V를 누르세요.');
+                toast('✅ 서식 복사 완료! 새 구글 문서에서 Cmd + V를 누르세요.');
                 setTimeout(() => { window.open('https://docs.new', '_blank'); }, 300);
             } catch (e) {
                 const r = document.createRange(); r.selectNodeContents(out);
