@@ -21,7 +21,7 @@
         .wrap { max-width: 680px; margin: 0 auto; }
         h1 { text-align: center; font-size: 2.2rem; margin-bottom: 22px; }
         .row { display: flex; gap: 8px; }
-        input, textarea, select { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+        input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
         button { padding: 0 18px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
@@ -61,7 +61,7 @@
         <summary>⚙️ 설정</summary>
         <div class="set">
             <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
-            <input id="model" type="text" value="gemini-3.8-flash" placeholder="모델명 (기본: gemini-3.8-flash)">
+            <input id="model" type="text" placeholder="모델명 (비워두면 최적 모델 자동 감지)" autocomplete="off">
             <textarea id="prompt" rows="8" placeholder="설교문 시스템 지침 프롬프트를 한 번만 붙여넣으세요"></textarea>
             <div class="btn-row">
                 <button id="copyprompt" class="btn-sub">📋 프롬프트 복사</button>
@@ -204,30 +204,38 @@
             return h + (ul ? '</ul>' : '');
         }
 
-        // 구글 API 버전별 스마트 스트리밍 호출
+        // 구글 서버에 물어봐서 현재 사용 가능한 최고의 Flash 모델을 찾아내는 자동 감지기
+        async function getAvailableModel(key) {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                const j = await res.json();
+                if (j.models) {
+                    const names = j.models.map(m => m.name.replace('models/', ''));
+                    // 1순위 3.8-flash, 2순위 2.0-flash, 3순위 1.5-flash
+                    const prio = ['gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+                    for (const p of prio) {
+                        const found = names.find(n => n.includes(p));
+                        if (found) return found;
+                    }
+                    const anyFlash = names.find(n => n.includes('flash'));
+                    if (anyFlash) return anyFlash;
+                }
+            } catch (e) {}
+            return 'gemini-1.5-flash';
+        }
+
+        // 스마트 스트리밍 실행
         async function fetchStream(model, key, systemInstruction, userPrompt, onChunk) {
-            // gemini-1.5 계열은 공식 정식 버전 v1, 3.8 등은 실험 버전 v1beta로 자동 주소 매핑
-            const is15 = model.includes('1.5');
-            const apiVer = is15 ? 'v1' : 'v1beta';
-            const realModel = is15 ? 'gemini-1.5-flash-latest' : model;
-
-            const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(realModel)}:streamGenerateContent?alt=sse&key=${key}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${key}`;
             
-            const reqBody = {
-                contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-                generationConfig: { maxOutputTokens: 8192 }
-            };
-            // v1beta일 때만 system_instruction 완벽 지원
-            if (!is15) {
-                reqBody.system_instruction = { parts: [{ text: systemInstruction }] };
-            } else {
-                reqBody.contents[0].parts[0].text = `${systemInstruction}\n\n---\n${userPrompt}`;
-            }
-
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(reqBody)
+                body: JSON.stringify({ 
+                    system_instruction: { parts: [{ text: systemInstruction }] },
+                    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                    generationConfig: { maxOutputTokens: 8192 }
+                })
             });
 
             if (!res.ok) {
@@ -274,27 +282,32 @@
                 const key = $('key').value.trim();
                 if (!key) { $('settings').open = true; throw new Error('Gemini API 키를 입력해 주세요'); }
                 
-                st.textContent = '⚡ 본문 분석 중...';
+                st.textContent = '⚡ 본문 분석 및 최적 엔진 연결 중...';
                 out.innerHTML = '';
                 out.style.display = 'block';
                 $('copy').style.display = 'none';
 
                 const { systemInstruction, userPrompt } = await buildPayload();
-                let model = $('model').value.trim() || 'gemini-3.8-flash';
+                
+                // 사용자가 직접 쓴 모델이 없으면 구글에서 바로 쓸 수 있는 모델을 자동 탐색!
+                let model = $('model').value.trim();
+                if (!model) {
+                    model = await getAvailableModel(key);
+                }
+
+                st.textContent = `✍️ [${model}] 실시간으로 설교문을 작성하고 있습니다...`;
+
                 let textResult = '';
-
-                st.textContent = '✍️ 실시간으로 설교문을 작성하고 있습니다...';
-
                 try {
-                    // 1차 시도 (입력된 모델)
                     textResult = await fetchStream(model, key, systemInstruction, userPrompt, chunk => {
                         out.innerHTML = mdToHtml(chunk);
                     });
                 } catch (err) {
-                    // 3.8 서버 폭주(demand) 발생 시, 100% 열려 있는 공식 1.5-flash 정식 엔드포인트로 즉각 우회!
-                    if (err.message.includes('demand') || err.message.includes('not found')) {
-                        st.textContent = '🔄 공식 안정 엔진(v1/gemini-1.5-flash)으로 즉시 전환 작성 중...';
-                        textResult = await fetchStream('gemini-1.5-flash', key, systemInstruction, userPrompt, chunk => {
+                    // 혹시라도 서버 폭주(demand) 발생 시 자동 감지된 다른 모델로 즉시 1회 자동 전환
+                    if (err.message.includes('demand')) {
+                        st.textContent = '🔄 서버 혼잡으로 백업 엔진 자동 전환 중...';
+                        const backup = await getAvailableModel(key);
+                        textResult = await fetchStream(backup, key, systemInstruction, userPrompt, chunk => {
                             out.innerHTML = mdToHtml(chunk);
                         });
                     } else {
