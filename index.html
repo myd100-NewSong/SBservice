@@ -17,67 +17,77 @@
         @media (prefers-color-scheme: dark) { :root { --bg:#0b0f19; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --border:#243047; --accent:#3b82f6; } }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--text); font-family: 'Gowun Dodum', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
-               padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+               padding: calc(env(safe-area-inset-top, 0px) + 24px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
         .wrap { max-width: 680px; margin: 0 auto; }
-        h1 { text-align: center; font-size: 2rem; margin-bottom: 18px; }
+        h1 { text-align: center; font-size: 2.1rem; margin-bottom: 20px; }
+        
         .row { display: flex; gap: 8px; }
-        input, textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+        input, textarea { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.1rem; font-family: inherit; }
         
         button { border-radius: 12px; border: none; color: #fff; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         
-        .btn-main { background: var(--accent); padding: 0 20px; font-size: 1.05rem; }
-        .btn-commentary { background: #475569; padding: 0 14px; font-size: 0.92rem; }
+        .btn-main { background: #1a73e8; padding: 0 22px; font-size: 1.05rem; }
+        .btn-comm { background: #475569; padding: 0 14px; font-size: 0.95rem; }
         
-        .action-sub { display: flex; gap: 8px; margin-top: 10px; }
-        .action-sub button { flex: 1; padding: 10px 0; font-size: 0.88rem; background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .sub-bar { display: flex; gap: 8px; margin-top: 10px; }
+        .sub-bar button { flex: 1; padding: 12px; font-size: 0.95rem; }
+        .btn-claude { background: #d97706; }
+        .btn-docs { background: #059669; }
         
-        #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; font-weight: 500; }
-        #out { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; line-height: 1.8; display: none; outline: none; font-size: 12pt; text-align: justify; margin-top: 10px; }
-        #out h2 { font-size: 1.25rem; color: var(--accent); margin-bottom: 12px; }
-        #out h3 { font-size: 1.05rem; margin: 18px 0 6px; color: var(--accent); }
-        #out p { margin-bottom: 10px; } #out ul { padding-left: 20px; margin-bottom: 10px; }
+        #status { margin: 14px 2px; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; font-weight: 500; text-align: center; }
         
-        #copy { display: none; width: 100%; margin-top: 14px; padding: 15px; font-size: 1.05rem; background: #059669; }
+        .guide-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-top: 14px; line-height: 1.75; font-size: 0.95rem; }
+        .guide-card strong { color: var(--accent); }
+        .guide-card ol { padding-left: 20px; margin-top: 8px; }
         
-        details { margin-top: 24px; color: var(--muted); }
-        summary { cursor: pointer; padding: 6px 0; font-weight: 600; font-size: 0.9rem; }
+        details { margin-top: 26px; color: var(--muted); }
+        summary { cursor: pointer; padding: 6px 0; font-weight: 600; font-size: 0.95rem; }
         .set { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .btn-save { background: #059669; padding: 12px; }
+        .btn-save { background: #059669; padding: 12px; font-size: 1rem; }
         textarea { font-size: 0.9rem; }
-        .ver { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 28px; }
-        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 1000; }
+        
+        .ver { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 30px; }
+        #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: #111827; color: #fff; padding: 11px 20px; border-radius: 20px; font-size: 0.92rem; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 <div class="wrap">
     <h1>새벽설교</h1>
+    
     <div class="row">
         <input id="ref" type="text" placeholder="창40, 출6, 요5" autocomplete="off" enterkeyhint="go" autofocus>
-        <!-- 웹앱 안에서 즉시 생성 -->
-        <button id="go" class="btn-main">작성</button>
-        <button id="btnComm" class="btn-commentary" title="해당 장의 공개 성경 주석 보기">📖 주석</button>
+        <!-- 제미나이 본 서버로 즉시 작성 -->
+        <button id="goGemini" class="btn-main">✨ Gemini로 작성</button>
+        <button id="btnComm" class="btn-comm" title="해당 장의 공개 성경 주석 보기">📖 주석</button>
     </div>
 
-    <div class="action-sub">
-        <button id="goGemini">✨ Gemini 웹으로 열기</button>
-        <button id="goClaude">🟠 Claude 웹으로 열기</button>
+    <div class="sub-bar">
+        <button id="goClaude" class="btn-claude">🟠 Claude로 작성</button>
+        <button id="openDocs" class="btn-docs">📄 구글 문서 열기</button>
     </div>
-    
+
     <div id="status"></div>
-    <div id="out" contenteditable="true"></div>
-    <button id="copy">📋 설교문 복사 & 구글 문서 열기</button>
+
+    <div class="guide-card">
+        💡 <strong>가장 빠른 새벽설교 작성법</strong>
+        <ol>
+            <li>성경 장(예: <strong>출6</strong>) 입력 후 <strong>[✨ Gemini로 작성]</strong> 클릭</li>
+            <li>본문과 프롬프트가 <strong>자동 복사</strong>되며 구글 제미나이 창이 열립니다.</li>
+            <li>대화창에서 <strong>붙여넣기(Cmd + V)</strong> 후 엔터를 치면 과부하 에러 없이 즉시 작성됩니다!</li>
+        </ol>
+    </div>
 
     <details id="settings">
-        <summary>⚙️ 설정 (API 키 및 프롬프트)</summary>
+        <summary>⚙️ 설교문 프롬프트 지침 설정</summary>
         <div class="set">
-            <input id="key" type="password" placeholder="Gemini API 키" autocomplete="off">
-            <textarea id="prompt" rows="8" placeholder="설교문 시스템 지침 프롬프트를 한 번만 붙여넣으세요"></textarea>
-            <button id="savebtn" class="btn-save">💾 설정 저장</button>
+            <textarea id="prompt" rows="8" placeholder="설교문 프롬프트를 한 번만 붙여넣으세요"></textarea>
+            <button id="savebtn" class="btn-save">💾 프롬프트 저장</button>
         </div>
     </details>
-    <div class="ver">0.5.0</div>
+
+    <div class="ver">0.5.0 (Gemini Web Direct)</div>
 </div>
 <div id="toast"></div>
 
@@ -110,9 +120,8 @@
 
         function toast(msg) {
             const t = $('toast'); t.textContent = msg; t.classList.add('show');
-            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2000);
+            clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
         }
-        function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
         const DATA_VER = '0.5.0';
         if (window.caches) caches.keys().then(ks => ks.filter(k => k.startsWith('bible-data-') && k !== 'bible-data-' + DATA_VER).forEach(k => caches.delete(k))).catch(() => {});
@@ -138,20 +147,15 @@
             }));
         }
 
-        const KEYS = { key: 'sermon.gkey', prompt: 'sermon.prompt' };
-        Object.keys(KEYS).forEach(n => {
-            try { 
-                const saved = localStorage.getItem(KEYS[n]);
-                if (saved) $(n).value = saved;
-            } catch (e) {}
-        });
+        try { 
+            const savedPrompt = localStorage.getItem('sermon.prompt');
+            if (savedPrompt) $('prompt').value = savedPrompt;
+        } catch (e) {}
 
         function saveSettings() {
             try {
-                Object.keys(KEYS).forEach(n => {
-                    localStorage.setItem(KEYS[n], $(n).value.trim());
-                });
-                toast('✅ 설정이 안전하게 저장되었습니다!');
+                localStorage.setItem('sermon.prompt', $('prompt').value.trim());
+                toast('✅ 프롬프트가 안전하게 저장되었습니다!');
             } catch (e) {
                 toast('⚠️ 저장 실패: ' + e.message);
             }
@@ -176,7 +180,7 @@
             }
         }
 
-        async function buildPayload() {
+        async function buildFullPrompt() {
             const ref = parseRef($('ref').value);
             if (!ref) throw new Error('예: 창40, 출6, 요5 형태로 입력해 주세요');
             const tpl = $('prompt').value.trim();
@@ -187,136 +191,46 @@
             if (!rows.length) throw new Error(`${ref.name} ${ref.chapter}장은 없습니다`);
             
             const bibleText = rows.map(r => `${r[2]}절: ${r[3]}`).join('\n');
-            const systemInstruction = tpl.split('[성경책 이름]').join(ref.name).split('[숫자]').join(String(ref.chapter));
-            const userPrompt = `[${ref.name} ${ref.chapter}장 개역개정 본문]\n${bibleText}\n\n위 지침에 따라 즉시 은혜로운 새벽설교문을 작성해 주세요.`;
-
-            return { systemInstruction, userPrompt, fullPrompt: `${systemInstruction}\n\n---\n${userPrompt}` };
+            const head = tpl.split('[성경책 이름]').join(ref.name).split('[숫자]').join(String(ref.chapter));
+            
+            return `${head}\n\n---\n[${ref.name} ${ref.chapter}장 본문]\n${bibleText}\n\n※ 위 지침에 따라 은혜로운 새벽설교문을 즉시 작성해 주세요.`;
         }
 
-        function mdToHtml(src) {
-            const lines = src.replace(/^```[a-z]*\n?/i, '').replace(/\n?```\s*$/, '').split('\n');
-            const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            let h = '', ul = false, first = true;
-            lines.forEach(ln => {
-                const t = ln.trim();
-                const li = t.match(/^[*-]\s+(.*)/);
-                if (li) { if (!ul) { h += '<ul>'; ul = true; } h += '<li>' + inl(li[1]) + '</li>'; first = false; return; }
-                if (ul) { h += '</ul>'; ul = false; }
-                if (!t) return;
-                const hd = t.match(/^#{1,4}\s+(.*)/);
-                if (first && !hd) h += '<h2>' + inl(t) + '</h2>';
-                else if (hd || /^[<\[][^<>\[\]]{1,40}[>\]]:?$/.test(t)) h += '<h3>' + inl(hd ? hd[1] : t) + '</h3>';
-                else h += '<p>' + inl(t) + '</p>';
-                first = false;
-            });
-            return h + (ul ? '</ul>' : '');
-        }
-
-        // 구글 3.8 Flash 전용 호출 (High demand 발생 시 2초 대기 후 자동 재시도)
-        async function callGeminiWithRetry(systemInstruction, userPrompt, key, maxRetries = 2) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${key}`;
-            const body = JSON.stringify({
-                system_instruction: { parts: [{ text: systemInstruction }] },
-                contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-                generationConfig: { maxOutputTokens: 8192 }
-            });
-
-            for (let attempt = 0; attempt <= maxRetries; attempt++) {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: body
-                });
-
-                const j = await res.json();
-                if (res.ok) {
-                    const parts = j.candidates?.[0]?.content?.parts || [];
-                    const fullText = parts.map(x => x.text || '').join('');
-                    if (fullText.trim()) return fullText;
-                }
-
-                const errMsg = (j.error && j.error.message) || '';
-                // 서버 과부하(demand / 503)이고 재시도 횟수가 남았으면 잠시 후 자동 재시도
-                if ((errMsg.includes('demand') || res.status === 503 || res.status === 429) && attempt < maxRetries) {
-                    $('status').textContent = `🔄 서버가 혼잡하여 1초 후 자동 재시도 중... (${attempt + 1}/${maxRetries})`;
-                    await new Promise(r => setTimeout(r, 1500));
-                    continue;
-                }
-
-                throw new Error(errMsg || ('API 오류: ' + res.status));
-            }
-        }
-
-        let busy = false;
-        async function generateInApp() {
-            if (busy) return;
-            const key = $('key').value.trim();
-            if (!key) { 
-                $('settings').open = true; 
-                toast('⚠️ 설정에 Gemini API 키를 입력해 주세요'); 
-                return; 
-            }
-
-            busy = true; $('go').disabled = true;
-            const st = $('status'), out = $('out');
+        // 제미나이 / 클로드 다이렉트 실행기
+        async function runDirect(targetUrl, serviceName) {
+            const st = $('status');
             try {
-                st.textContent = '⚡ 본문 분석 및 Gemini 3.8 Flash로 작성 중...';
-                out.style.display = 'none'; $('copy').style.display = 'none';
-
-                const { systemInstruction, userPrompt } = await buildPayload();
-                const fullText = await callGeminiWithRetry(systemInstruction, userPrompt, key);
-
-                out.innerHTML = mdToHtml(fullText);
-                out.style.display = 'block';
-                $('copy').style.display = 'block';
-                st.textContent = '✅ 작성이 완료되었습니다!';
-                out.scrollIntoView({ behavior: 'smooth' });
+                st.textContent = '⏳ 본문 준비 중...';
+                const fullPrompt = await buildFullPrompt();
+                
+                await navigator.clipboard.writeText(fullPrompt);
+                
+                toast(`📋 복사 완료! ${serviceName}에서 붙여넣으세요.`);
+                st.textContent = `✅ 복사 완료! 열린 ${serviceName} 창에서 붙여넣기(Cmd + V) 후 엔터를 누르세요.`;
+                
+                setTimeout(() => {
+                    window.open(targetUrl, '_blank');
+                }, 200);
 
             } catch (e) {
                 st.textContent = '⚠️ ' + e.message;
-            } finally {
-                busy = false; $('go').disabled = false;
             }
         }
 
-        async function openExternal(targetUrl, serviceName) {
-            try {
-                const { fullPrompt } = await buildPayload();
-                await navigator.clipboard.writeText(fullPrompt);
-                toast(`📋 복사 완료! ${serviceName}에서 붙여넣으세요.`);
-                setTimeout(() => { window.open(targetUrl, '_blank'); }, 200);
-            } catch (e) {
-                $('status').textContent = '⚠️ ' + e.message;
-            }
-        }
+        $('goGemini').addEventListener('click', () => runDirect('https://gemini.google.com/', 'Gemini'));
+        $('goClaude').addEventListener('click', () => runDirect('https://claude.ai/new', 'Claude'));
 
-        async function copyRich() {
-            const out = $('out');
-            const formattedHtml = `
-                <div style="font-family: 'Gowun Dodum', '고운돋움', sans-serif; font-size: 12pt; line-height: 1.8; text-align: justify; color: #111827;">
-                    ${out.innerHTML}
-                </div>
-            `;
-            try {
-                await navigator.clipboard.write([new ClipboardItem({
-                    'text/html': new Blob([formattedHtml], { type: 'text/html' }),
-                    'text/plain': new Blob([out.innerText], { type: 'text/plain' })
-                })]);
-                toast('✅ 서식 복사 완료! 구글 문서로 이동합니다.');
-                setTimeout(() => { window.open('https://docs.new', '_blank'); }, 300);
-            } catch (e) {
-                window.open('https://docs.new', '_blank');
-            }
-        }
+        // 엔터키 누르면 바로 Gemini로 실행
+        $('ref').addEventListener('keydown', e => { 
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                runDirect('https://gemini.google.com/', 'Gemini'); 
+            } 
+        });
 
-        $('go').addEventListener('click', generateInApp);
-        $('ref').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); generateInApp(); } });
-        $('copy').addEventListener('click', copyRich);
         $('savebtn').addEventListener('click', saveSettings);
         $('btnComm').addEventListener('click', openCommentary);
-        
-        $('goGemini').addEventListener('click', () => openExternal('https://gemini.google.com/', 'Gemini'));
-        $('goClaude').addEventListener('click', () => openExternal('https://claude.ai/new', 'Claude'));
+        $('openDocs').addEventListener('click', () => { window.open('https://docs.new', '_blank'); });
 
         if (!$('prompt').value) $('settings').open = true;
         ensure(['nkrv']).catch(() => {});
