@@ -69,7 +69,8 @@
             </div>
         </div>
     </details>
-    <div class="ver">0.5 (Ultra Fast)</div>
+    <!-- 버전 0.5.0 표기 -->
+    <div class="ver">0.5.0</div>
 </div>
 <div id="toast"></div>
 
@@ -96,7 +97,7 @@
 
         const REVERSE_BOOK_MAP = Object.fromEntries(Object.entries(BOOK_MAP).map(([k, v]) => [v, k]));
         const $ = id => document.getElementById(id);
-        const VERS = { nkrv: { name: '개역개정', idx: 3 } }; // 개역개정만 전송하여 속도 2배 향상!
+        const VERS = { nkrv: { name: '개역개정', idx: 3 } };
         let BIBLE = [], metaP = null;
         const loaded = {};
 
@@ -106,7 +107,8 @@
         }
         function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-        const DATA_VER = '0.5';
+        // 데이터 캐시 버전 0.5.0
+        const DATA_VER = '0.5.0';
         if (window.caches) caches.keys().then(ks => ks.filter(k => k.startsWith('bible-data-') && k !== 'bible-data-' + DATA_VER).forEach(k => caches.delete(k))).catch(() => {});
 
         function getData(file) {
@@ -178,7 +180,6 @@
             const rows = BIBLE.filter(r => r[0] === ref.book && r[1] === ref.chapter);
             if (!rows.length) throw new Error(`${ref.name} ${ref.chapter}장은 없습니다`);
             
-            // 본문만 군더더기 없이 가볍게 생성
             const bibleText = rows.map(r => `${r[2]}절: ${r[3]}`).join('\n');
             const systemInstruction = tpl.split('[성경책 이름]').join(ref.name).split('[숫자]').join(String(ref.chapter));
             const userPrompt = `[${ref.name} ${ref.chapter}장 개역개정 본문]\n${bibleText}\n\n위 본문을 바탕으로 지침에 따라 즉시 은혜로운 새벽설교문을 작성해 주세요.`;
@@ -222,7 +223,6 @@
                 const { systemInstruction, userPrompt } = await buildPayload();
                 const model = $('model').value.trim() || 'gemini-3.8-flash';
 
-                // AI Studio와 동일한 system_instruction 분리 및 실시간 스트리밍 호출
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${key}`;
                 
                 const res = await fetch(url, {
@@ -265,7 +265,7 @@
                                 const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
                                 if (chunk) {
                                     fullText += chunk;
-                                    out.innerHTML = mdToHtml(fullText); // 1초 만에 화면에 타이핑 시작!
+                                    out.innerHTML = mdToHtml(fullText);
                                 }
                             } catch (e) {}
                         }
